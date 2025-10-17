@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <title>Obras Espiritualistas</title>
+</head>
+
+<body>
+  <h1>Obras Espiritualistas</h1>
+  <div id="obras"></div>
+
+  <h2>Adicionar nova obra</h2>
+  <form id="obraForm">
+    <input type="text" id="titulo" placeholder="Título" required><br>
+    <input type="text" id="autor" placeholder="Autor"><br>
+    <textarea id="conteudo" placeholder="Conteúdo" required></textarea><br>
+    <input type="file" id="arquivo" accept=".pdf,.jpg,.png"><br>
+    <input type="date" id="data_publicacao"><br>
+    <button type="submit">Adicionar</button>
+  </form>
+
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+    const supabaseUrl = 'https://rznmruorumgryjjtunms.supabase.co' // teu Project URL
+    const supabaseKey = 'ANON_PUBLIC_KEY' // tua anon/public key
+    const supabase = createClient(supabaseUrl, supabaseKey)
+
+    async function fetchObras() {
+      const { data, error } = await supabase.from('obras').select('*').order('id')
+      if(error) console.error(error)
+      else {
+        const container = document.getElementById('obras')
+        container.innerHTML = data.map(o => {
+          let fileLink = o.file_url ? `<a href="${o.file_url}" target="_blank">Ver ficheiro</a>` : ''
+          return `<h3>${o.titulo}</h3><p>${o.conteudo}</p>${fileLink}`
+        }).join('')
+      }
+    }
+
+    fetchObras()
+
+    const form = document.getElementById('obraForm')
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault()
+      const titulo = document.getElementById('titulo').value
+      const autor = document.getElementById('autor').value
+      const conteudo = document.getElementById('conteudo').value
+      const data_publicacao = document.getElementById('data_publicacao').value || null
+      const arquivo = document.getElementById('arquivo').files[0]
+
+      let file_url = null
+      if(arquivo) {
+        const { data: fileData, error: uploadError } = await supabase
+          .storage
+          .from('obras-files')
+          .upload(`${Date.now()}_${arquivo.name}`, arquivo)
+
+        if(uploadError) console.error('Erro upload:', uploadError)
+        else {
+          const { publicURL, error: urlError } = supabase
+            .storage
+            .from('obras-files')
+            .getPublicUrl(fileData.path)
+          if(urlError) console.error(urlError)
+          else file_url = publicURL
+        }
+      }
+
+      const { data, error } = await supabase.from('obras').insert([
+        { titulo, autor, conteudo, data_publicacao, file_url }
+      ])
+
+      if(error) console.error(error)
+      else {
+        console.log('Obra adicionada:', data)
+        fetchObras()
+        form.reset()
+      }
+    })
+  </script>
+</body>
+</html>
