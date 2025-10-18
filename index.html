@@ -14,7 +14,7 @@
     <input type="text" id="titulo" placeholder="Título" required><br>
     <input type="text" id="autor" placeholder="Autor"><br>
     <textarea id="conteudo" placeholder="Conteúdo" required></textarea><br>
-    <input type="file" id="arquivo" accept=".pdf,.jpg,.png"><br>
+    <input type="file" id="arquivo" accept=".pdf,.jpg,.png,.gif"><br>
     <input type="date" id="data_publicacao"><br>
     <button type="submit">Adicionar</button>
   </form>
@@ -22,8 +22,8 @@
   <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
-    const supabaseUrl = 'https://rznmruorumgryjjtunms.supabase.co' // teu Project URL
-    const supabaseKey = 'ANON_PUBLIC_KEY' // tua anon/public key
+    const supabaseUrl = 'https://rznmruorumgryjjtunms.supabase.co'
+    const supabaseKey = 'COLOCA_AQUI_TUA_ANON_PUBLIC_KEY'
     const supabase = createClient(supabaseUrl, supabaseKey)
 
     async function fetchObras() {
@@ -32,8 +32,17 @@
       else {
         const container = document.getElementById('obras')
         container.innerHTML = data.map(o => {
-          let fileLink = o.file_url ? `<a href="${o.file_url}" target="_blank">Ver ficheiro</a>` : ''
-          return `<h3>${o.titulo}</h3><p>${o.conteudo}</p>${fileLink}`
+          let fileHTML = ''
+
+          if(o.file_url) {
+            if(o.file_url.match(/\.(jpeg|jpg|png|gif)$/i)) {
+              fileHTML = `<br><img src="${o.file_url}" alt="Imagem da obra" style="max-width:300px;">`
+            } else {
+              fileHTML = `<br><a href="${o.file_url}" target="_blank">Ver ficheiro</a>`
+            }
+          }
+
+          return `<h3>${o.titulo}</h3><p>${o.conteudo}</p>${fileHTML}`
         }).join('')
       }
     }
